@@ -3,5 +3,6 @@
 
 int main() {
     AVL("entiers.txt", true);
+
     return 0;
 }
