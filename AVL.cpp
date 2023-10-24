@@ -54,14 +54,15 @@ AVL::AVL(const char* filename, bool option)
         getline(file, ligne); // Lire la deuxième ligne pour obtenir les entiers
         istringstream flux(ligne);
         int nombre;
+        flux >> nombre; // Lire le premier entier
+        this->r = new noeud(nombre);
         if (option){ // insertion en feuilles
-            for (int i = 0; i < nbr_entiers; i++){
+            for (int i = 1 ; i < nbr_entiers; i++){
                 if (flux >> nombre) { // Traitez chaque nombre en tant qu'entier
                     cout << "Nombre : " << nombre << endl;
-                    noeud* feuille = new noeud(nombre);
-                    this->insertionFeuille(feuille, this->root());
+                    this->insertionFeuille(this->root(), new noeud(nombre));
                     this->equilibre(this->root());
-
+                    this->prefixe(this->root());
 
 
                     
@@ -114,132 +115,163 @@ void AVL::prefixe(noeud* x)
     prefixe(x->fd);
 }
 
-int AVL::hauteur(noeud* x)
-{
-    if (x == nullptr) return -1 ;
-    else return x->h ;
-}
 
-void desequilibres(noeud* x) {
+void AVL::desequilibres(noeud* x) { // met à jour l'attribut d de chaque noeud de l'arbre enraciné par x
     if (x == nullptr) {
         return;
     }
 
     // Calcule le facteur d'équilibre pour le nœud actuel
-    x->d = hauteur(x->gauche) - hauteur(x->droite);
-
+    if (x->fg == nullptr && x->fd == nullptr) {
+        x->d = 0;
+    } else if (x->fg == nullptr) {
+        x->d = -1 - x->fd->h;
+    } else if (x->fd == nullptr) {
+        x->d = x->fg->h+1;
+    } else {
+        x->d = x->fg->h - x->fd->h;
+    }
+    cout << "desequilibre de "<< x->cle << " : " << x->d << endl;
     // Appel récursif pour les sous-arbres gauche et droit
-    desequilibres(x->gauche);
-    desequilibres(x->droite);
+    if (x->fg != nullptr) desequilibres(x->fg);
+    if (x->fd != nullptr) desequilibres(x->fd);
 }
 
-void insertionFeuille(noeud* x, noeud* y)
+void AVL::insertionFeuille(noeud* x, noeud* y)
 {
     if (x == nullptr) return ;
     else if (y->cle < x->cle)
     {
+        x->N++ ;
+        x->h++ ;
         if (x->fg == nullptr)
         {
+            cout << "insertion de " << y->cle << " en tant que fils gauche de " << x->cle << endl ;
             x->fg = y ;
             y->pere = x ;
+        }   
+        else {
+            insertionFeuille(x->fg, y) ;
         }
-        else insertionFeuille(x->fg, y) ;
     }
     else
     {
+        x->N++ ;
+        x->h++ ;
         if (x->fd == nullptr)
         {
+            cout << "insertion de " << y->cle << " en tant que fils droit de " << x->cle << endl ;
             x->fd = y ;
             y->pere = x ;
         }
-        else insertionFeuille(x->fd, y) ;
+        else {
+            insertionFeuille(x->fd, y) ;
+        }
     }
-
-    x->hauteur = 1 + max(hauteur(x->fg), hauteur(x->fd));
-
+    cout << "hauteur de "<< x->cle << " : " << x->h << endl;
 }
 
-Noeud* partition(Noeud* racine, int k) {
-    if (racine == nullptr) {
-        return nullptr;
-    }
-
-    int t = (racine->gauche != nullptr) ? racine->gauche->N : 0;
-
-    if (k == t + 1) {
-        // Trouvé la k-ième plus petite valeur à la racine
-        return racine;
-    } else if (k <= t) {
-        // La k-ième plus petite valeur se trouve dans le sous-arbre gauche
-        racine->gauche = partition(racine->gauche, k);
-        // Effectuer une rotation droite pour rééquilibrer si nécessaire
-        return rotationDroite(racine);
-    } else {
-        // La k-ième plus petite valeur se trouve dans le sous-arbre droit
-        racine->droite = partition(racine->droite, k - t - 1);
-        // Effectuer une rotation gauche pour rééquilibrer si nécessaire
-        return rotationGauche(racine);
-    }
+void AVL::insertionRacine(noeud *x, noeud *y)
+{
 }
 
-Noeud* equilibre(Noeud* x) {
+noeud* AVL::partition(noeud* x, int k) {
+return nullptr;
+}
+
+void AVL::equilibre(noeud* x) {
     if (x == nullptr) {
-        return x;
+        return;
     }
 
     desequilibres(x);
     int equilibre = x->d;
-
     // Si le nœud est déséquilibré à gauche, équilibrer le sous-arbre gauche
     if (equilibre > 1) {
         // Cas de la rotation simple à droite ou double à droite-gauche
-        if (x->gauche->d < 0) {
-            x->gauche = rotationGauche(x->gauche);
+        if (x->fg->d < 0) {
+           rotationGauche(x->fg);
         }
         // Effectuer la rotation simple à droite
         return rotationDroite(x);
     }
 
     // Si le nœud est déséquilibré à droite, équilibrer le sous-arbre droit
-    if (equilibre < -1) {
+    if (equilibre < -1 && x->cle < x->fd->cle) {
         // Cas de la rotation simple à gauche ou double à gauche-droite
-        if (x->droite->d > 0) {
-            x->droite = rotationDroite(x->droite);
+        if (x->fd->d > 0) {
+            rotationDroite(x->fd);
         }
         // Effectuer la rotation simple à gauche
         return rotationGauche(x);
     }
 
     // Si le nœud est équilibré, pas de modification nécessaire
-    return x;
+    return;
 }
 
-Noeud* rotationDroite(Noeud* y) {
-    Noeud* x = y->gauche;
-    Noeud* T2 = x->droite;
+void AVL::rotationDroite(noeud* r) {
+    if (r == nullptr || r->fg == nullptr) {
+        cout << "La rotation droite ne peut pas être effectuée" << endl;
+        return;
+    }
 
-    x->droite = y;
-    y->gauche = T2;
+    cout << "---------Rotation droite de " << r->cle << endl;
+    noeud* pere = r->pere;
+    noeud* G = r->fg;
 
-    y->hauteur = 1 + max(hauteur(y->gauche), hauteur(y->droite));
-    x->hauteur = 1 + max(hauteur(x->gauche), hauteur(x->droite));
+    // Mettre à jour les liens entre les nœuds
+    G->pere = pere;
+    r->fg = G->fd;
 
-    return x;
+    if (G->fd != nullptr)
+        G->fd->pere = r;
+
+    G->fd = r;
+    r->pere = G;
+
+    // Mettre à jour le lien du père du nœud r
+    if (pere == nullptr)
+        r = G;
+    else {
+        if (pere->fg == r)
+            pere->fg = G;
+        else
+            pere->fd = G;
+    }
 }
 
-Noeud* rotationGauche(Noeud* x) {
-    Noeud* y = x->droite;
-    Noeud* T2 = y->gauche;
-
-    y->gauche = x;
-    x->droite = T2;
-
-    x->hauteur = 1 + max(hauteur(x->gauche), hauteur(x->droite));
-    y->hauteur = 1 + max(hauteur(y->gauche), hauteur(y->droite));
-
-    return y;
+int AVL::noeuds(noeud *x)
+{
+    return 0;
 }
 
+void AVL::rotationGauche(noeud* r) {
+        if (r == nullptr || r->fd == nullptr) {
+        cout << "La rotation gauche ne peut pas être effectuée" << endl;
+        return;
+    }
 
+    cout << "---------Rotation gauche de " << r->cle << endl;
+    noeud* pere = r->pere;
+    noeud* D = r->fd;
 
+    // Mettre à jour les liens entre les nœuds
+    D->pere = pere;
+    r->fd = D->fg;
 
+    if (D->fg != nullptr) D->fg->pere = r;
+
+    D->fg = r;
+    r->pere = D;
+
+    // Mettre à jour le lien du père du nœud r
+    if (pere == nullptr)
+        r = D;
+    else {
+        if (pere->fd == r)
+            pere->fd = D;
+        else
+            pere->fg = D;
+    }
+}
