@@ -33,4 +33,5 @@ public :
     void desequilibres(noeud* x) ; // met à jour l'attribut d de chaque noeud de l'arbre enraciné par x
     noeud* partition(noeud* x, int k) ; // retourne le i-ème noeud de l'arbre enraciné par x
     void equilibre(noeud* x) ; // équilibre l'arbre enraciné par x en utilisant la procédure "diviser pour régner"
+    void majHauteurs(noeud* x) ; // met à jour l'attribut h de chaque noeud de l'arbre enraciné par x
     };

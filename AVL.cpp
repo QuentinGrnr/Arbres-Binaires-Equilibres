@@ -61,7 +61,7 @@ AVL::AVL(const char* filename, bool option)
                 if (flux >> nombre) { // Traitez chaque nombre en tant qu'entier
                     cout << "Nombre : " << nombre << endl;
                     this->insertionFeuille(this->root(), new noeud(nombre));
-                    this->equilibre(this->root());
+                    this->desequilibres(this->root());
                     this->prefixe(this->root());
 
 
@@ -120,21 +120,24 @@ void AVL::desequilibres(noeud* x) { // met à jour l'attribut d de chaque noeud 
     if (x == nullptr) {
         return;
     }
+    
+    if (x->fg != nullptr) desequilibres(x->fg);
+    if (x->fd != nullptr) desequilibres(x->fd); 
 
     // Calcule le facteur d'équilibre pour le nœud actuel
     if (x->fg == nullptr && x->fd == nullptr) {
         x->d = 0;
     } else if (x->fg == nullptr) {
         x->d = -1 - x->fd->h;
+        cout << "desequilibre de "<< x->cle << " : " << x->fd->cle << "/"<< x->fd->h << " - 1 = " << x->d << endl;
     } else if (x->fd == nullptr) {
         x->d = x->fg->h+1;
+        cout << "desequilibre de "<< x->cle << " : " << x->fg->cle << "/"<< x->fg->h << " + 1 = " << x->d << endl;
     } else {
         x->d = x->fg->h - x->fd->h;
+        cout << "desequilibre de "<< x->cle << " : " << x->fg->cle << "/"<<x->fg->h << " - "  << x->fd->cle << "/" << x->fd->h << " = " << x->d << endl;
     }
-    cout << "desequilibre de "<< x->cle << " : " << x->d << endl;
-    // Appel récursif pour les sous-arbres gauche et droit
-    if (x->fg != nullptr) desequilibres(x->fg);
-    if (x->fd != nullptr) desequilibres(x->fd);
+    equilibre(x);
 }
 
 void AVL::insertionFeuille(noeud* x, noeud* y)
@@ -171,25 +174,15 @@ void AVL::insertionFeuille(noeud* x, noeud* y)
     cout << "hauteur de "<< x->cle << " : " << x->h << endl;
 }
 
-void AVL::insertionRacine(noeud *x, noeud *y)
-{
-}
-
-noeud* AVL::partition(noeud* x, int k) {
-return nullptr;
-}
-
 void AVL::equilibre(noeud* x) {
     if (x == nullptr) {
         return;
     }
-
-    desequilibres(x);
     int equilibre = x->d;
     // Si le nœud est déséquilibré à gauche, équilibrer le sous-arbre gauche
-    if (equilibre > 1) {
+    if (equilibre == 2) {
         // Cas de la rotation simple à droite ou double à droite-gauche
-        if (x->fg->d < 0) {
+        if (x->fg->d == -1) {
            rotationGauche(x->fg);
         }
         // Effectuer la rotation simple à droite
@@ -197,9 +190,9 @@ void AVL::equilibre(noeud* x) {
     }
 
     // Si le nœud est déséquilibré à droite, équilibrer le sous-arbre droit
-    if (equilibre < -1 && x->cle < x->fd->cle) {
+    if (equilibre == -2) {
         // Cas de la rotation simple à gauche ou double à gauche-droite
-        if (x->fd->d > 0) {
+        if (x->fd->d == 1) {
             rotationDroite(x->fd);
         }
         // Effectuer la rotation simple à gauche
@@ -224,26 +217,22 @@ void AVL::rotationDroite(noeud* r) {
     G->pere = pere;
     r->fg = G->fd;
 
-    if (G->fd != nullptr)
-        G->fd->pere = r;
-
+    if (G->fd != nullptr) G->fd->pere = r;
     G->fd = r;
     r->pere = G;
 
     // Mettre à jour le lien du père du nœud r
     if (pere == nullptr)
-        r = G;
+        this->r = G;
     else {
         if (pere->fg == r)
             pere->fg = G;
         else
             pere->fd = G;
     }
-}
 
-int AVL::noeuds(noeud *x)
-{
-    return 0;
+    // Mettre à jour la hauteur après la rotation
+    majHauteurs(this->root());
 }
 
 void AVL::rotationGauche(noeud* r) {
@@ -267,11 +256,43 @@ void AVL::rotationGauche(noeud* r) {
 
     // Mettre à jour le lien du père du nœud r
     if (pere == nullptr)
-        r = D;
+        this->r = D;
     else {
         if (pere->fd == r)
             pere->fd = D;
         else
             pere->fg = D;
     }
+
+    // Mettre à jour la hauteur après la rotation
+    majHauteurs(this->root());
+}
+
+void AVL::majHauteurs(noeud* x) {
+    if (x == nullptr) {
+        return;
+    }
+
+    // Appel récursif pour les sous-arbres gauche et droit
+    majHauteurs(x->fg);
+    majHauteurs(x->fd);
+
+    // Calcul de la hauteur du noeud x
+    int hg = (x->fg == nullptr) ? -1 : x->fg->h;
+    int hd = (x->fd == nullptr) ? -1 : x->fd->h;
+    x->h = max(hg, hd) + 1;
+}
+
+
+int AVL::noeuds(noeud *x)
+{
+    return 0;
+}
+
+void AVL::insertionRacine(noeud *x, noeud *y)
+{
+}
+
+noeud* AVL::partition(noeud* x, int k) {
+return nullptr;
 }
