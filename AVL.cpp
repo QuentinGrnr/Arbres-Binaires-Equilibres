@@ -2,8 +2,11 @@
 #include <fstream>
 #include <string>
 #include <sstream>
+#include <string>
 #include "avl.h"
 using namespace std ;
+
+/******************** Fonctions noeud : ********************/
 
 noeud::noeud(int x)
 {
@@ -27,66 +30,11 @@ void noeud::affiche()
     cout << "valeur : "<< cle << ", nombre de noeud de l'arbre enraciné par ce noeud : " << N << ", déséquilibre de ce noeud : " << d << ", hauteur de l'arbre enraciné par ce noeud : " << h << endl ;
 }
 
+/******************** Fonctions AVL : ********************/
+
 AVL::AVL(noeud* r)
 {
     this->r = r ;
-}
-
-AVL::AVL(const char* filename, bool option)
-{
-    r = nullptr; // Initialiser l'arbre AVL
-
-    cout << "Lecture du fichier " << filename << endl;
-    ifstream file;
-    file.open(filename);
-    
-    if (!file)
-    {
-        cout << "Erreur : Impossible d'ouvrir le fichier " << filename << endl;
-        return;
-    }
-
-    string ligne;
-    if (file.is_open()){
-        getline(file, ligne); // Lire la première ligne pour obtenir le nombre d'entiers
-        int nbr_entiers = stoi(ligne);
-        cout << "nombre d'entier(s) : " << nbr_entiers << endl;
-        getline(file, ligne); // Lire la deuxième ligne pour obtenir les entiers
-        istringstream flux(ligne);
-        int nombre;
-        flux >> nombre; // Lire le premier entier
-        this->r = new noeud(nombre);
-        if (option){ // insertion en feuilles
-            for (int i = 1 ; i < nbr_entiers; i++){
-                if (flux >> nombre) { // Traitez chaque nombre en tant qu'entier
-                    cout << "Nombre : " << nombre << endl;
-                    this->insertionFeuille(this->root(), new noeud(nombre));
-                    this->desequilibres(this->root());
-                    this->prefixe(this->root());
-
-
-                    
-                } else {
-                    cout << "Impossible de lire un nombre." << endl;
-                    break;                
-                }
-            } 
-        } else { // insertion en racine
-            for (int i = 0; i < nbr_entiers; i++){
-                if (flux >> nombre) { // Traitez chaque nombre en tant qu'entier
-                    cout << "Nombre : " << nombre << endl;
-                    noeud* racine = new noeud(nombre);
-                    this->insertionRacine(racine, this->root());
-                    this->equilibre(this->root());
-                } else {
-                    cout << "Impossible de lire un nombre." << endl;
-                    break;                
-                }
-            } 
-        }
-    }
-
-    file.close();
 }
 
 AVL::~AVL()
@@ -96,48 +44,80 @@ AVL::~AVL()
 
 noeud* AVL::root()
 {
-    return r ;
+    return r ; 
 }
 
-void AVL::prefixe(noeud* x)
+void AVL::prefixe(noeud *x) 
 {
-     if (x == nullptr) {
-        return;
+    if (x == nullptr) return ;
+    else {
+        cout << x->cle << " " ;
+        prefixe(x->fg) ;
+        prefixe(x->fd) ;
     }
-
-    // Afficher la valeur du nœud courant
-    cout << x->cle << " ";
-
-    // Parcourir le sous-arbre gauche en récursif
-    prefixe(x->fg);
-
-    // Parcourir le sous-arbre droit en récursif
-    prefixe(x->fd);
 }
 
+AVL::AVL(const char* filename, bool option) // option = 0 : insertion en racine, option = 1 : insertion en feuille
+{
+    r = nullptr;
 
-void AVL::desequilibres(noeud* x) { // met à jour l'attribut d de chaque noeud de l'arbre enraciné par x
-    if (x == nullptr) {
+    cout << "Lecture du fichier " << filename << endl;
+    ifstream file;
+    file.open(filename);
+    if (!file)
+    {
+        cout << "Erreur : Impossible d'ouvrir le fichier " << filename << endl;
         return;
     }
-    
-    if (x->fg != nullptr) desequilibres(x->fg);
-    if (x->fd != nullptr) desequilibres(x->fd); 
+    string ligne;
 
-    // Calcule le facteur d'équilibre pour le nœud actuel
-    if (x->fg == nullptr && x->fd == nullptr) {
-        x->d = 0;
-    } else if (x->fg == nullptr) {
-        x->d = -1 - x->fd->h;
-        cout << "desequilibre de "<< x->cle << " : " << x->fd->cle << "/"<< x->fd->h << " - 1 = " << x->d << endl;
-    } else if (x->fd == nullptr) {
-        x->d = x->fg->h+1;
-        cout << "desequilibre de "<< x->cle << " : " << x->fg->cle << "/"<< x->fg->h << " + 1 = " << x->d << endl;
-    } else {
-        x->d = x->fg->h - x->fd->h;
-        cout << "desequilibre de "<< x->cle << " : " << x->fg->cle << "/"<<x->fg->h << " - "  << x->fd->cle << "/" << x->fd->h << " = " << x->d << endl;
+    if (file.is_open()){
+        getline(file, ligne); // Lire la première ligne pour obtenir le nombre d'entiers
+        int nbr_entiers = stoi(ligne);
+        getline(file, ligne); // Lire la deuxième ligne pour obtenir les entiers en question
+        istringstream flux(ligne); // Convertir la ligne en flux d'entrée pour pouvoir lire les entiers
+        int nombre;
+        flux >> nombre; // Lire le premier entier
+        this->r = new noeud(nombre);
+
+        if (option){ // insertion en feuilles
+            for (int i = 1 ; i <= nbr_entiers; i++){
+                if (flux >> nombre) { 
+                    this->insertionFeuille(this->root(), new noeud(nombre));
+                    cout << endl << "affichage de l'arbre après insertion de " << nombre << " : " << endl;
+                    this->affichageArbre(this->root(), "", 0); 
+                }
+            } 
+
+        } else { // insertion en racine
+            for (int i = 0; i < nbr_entiers; i++){
+                if (flux >> nombre) {
+                    this->insertionRacine(this->root(), new noeud(nombre)); 
+                    cout << endl << "affichage de l'arbre après insertion de " << nombre << " : " << endl;
+                    this->affichageArbre(this->root(), "", 0); 
+                }
+            } 
+        }
+
+        //une fois l'inserion terminée, on affiche l'arbre resultant et on l'équilibre
+        this->miseajour(this->root());
+        cout << "affichage préfixe avant équilibrage : " << endl;
+        this->prefixe(this->root()); 
+        cout << endl;
+        this->equilibre(this->root());
+        cout << "voulez vous un affichage graphique en plus de l'affichage préfixe de l'arbre ?" << endl << "1 = oui, 0 = non" << endl;
+        bool affichage;
+        cin >> affichage;
+        if (affichage) {
+            cout << endl << "affichage graphique de l'arbre: " << endl;
+            this->affichageArbre(this->root(), "", 0);
+        }
+        cout << endl << "affichage préfixe de l'arbre : " << endl;
+        this->prefixe(this->root());
+        cout << endl;
     }
-    equilibre(x);
+
+    file.close();
 }
 
 void AVL::insertionFeuille(noeud* x, noeud* y)
@@ -149,7 +129,6 @@ void AVL::insertionFeuille(noeud* x, noeud* y)
         x->h++ ;
         if (x->fg == nullptr)
         {
-            cout << "insertion de " << y->cle << " en tant que fils gauche de " << x->cle << endl ;
             x->fg = y ;
             y->pere = x ;
         }   
@@ -163,7 +142,6 @@ void AVL::insertionFeuille(noeud* x, noeud* y)
         x->h++ ;
         if (x->fd == nullptr)
         {
-            cout << "insertion de " << y->cle << " en tant que fils droit de " << x->cle << endl ;
             x->fd = y ;
             y->pere = x ;
         }
@@ -171,36 +149,69 @@ void AVL::insertionFeuille(noeud* x, noeud* y)
             insertionFeuille(x->fd, y) ;
         }
     }
-    cout << "hauteur de "<< x->cle << " : " << x->h << endl;
 }
 
-void AVL::equilibre(noeud* x) {
+void AVL::insertionRacine(noeud *x, noeud *y)
+{
+    if (x == nullptr) x = y;
+    else if (x->cle > y->cle){
+        x->pere = y;
+        y->fd = x;
+        this -> r = y;
+    } else {
+        x->pere = y;
+        y->fg = x;
+        this -> r = y;
+    }
+}
+
+int AVL::hauteur(noeud *x)
+{
+    if (x == nullptr) {
+        return 0;
+    }
+    
+    hauteur(x->fg);
+    hauteur(x->fd);
+
+    int hg = (x->fg == nullptr) ? -1 : x->fg->h;
+    int hd = (x->fd == nullptr) ? -1 : x->fd->h;
+    x->h = max(hg, hd) + 1;
+    return x->h;
+}
+
+void AVL::desequilibres(noeud *x)
+{ 
     if (x == nullptr) {
         return;
     }
-    int equilibre = x->d;
-    // Si le nœud est déséquilibré à gauche, équilibrer le sous-arbre gauche
-    if (equilibre == 2) {
-        // Cas de la rotation simple à droite ou double à droite-gauche
-        if (x->fg->d == -1) {
-           rotationGauche(x->fg);
-        }
-        // Effectuer la rotation simple à droite
-        return rotationDroite(x);
-    }
+    
+    if (x->fg != nullptr) desequilibres(x->fg);
+    if (x->fd != nullptr) desequilibres(x->fd); 
 
-    // Si le nœud est déséquilibré à droite, équilibrer le sous-arbre droit
-    if (equilibre == -2) {
-        // Cas de la rotation simple à gauche ou double à gauche-droite
-        if (x->fd->d == 1) {
-            rotationDroite(x->fd);
-        }
-        // Effectuer la rotation simple à gauche
-        return rotationGauche(x);
+    // Calcule le facteur d'équilibre pour le nœud actuel
+    if (x->fg == nullptr && x->fd == nullptr) {
+        x->d = 0;
+    } else if (x->fg == nullptr) {
+        x->d = -1 - x->fd->h;
+    } else if (x->fd == nullptr) {
+        x->d = x->fg->h+1;
+    } else {
+        x->d = x->fg->h - x->fd->h;
     }
+}
 
-    // Si le nœud est équilibré, pas de modification nécessaire
-    return;
+void AVL::equilibre(noeud* x) {
+    if (x != nullptr && x->N > 1){
+        int n = x->N;
+        int m = n/2;
+        if (n % 2 != 0) {
+        m++; // Ajoute 0,5 si le nombre est impair
+        }
+        partition(x, m);
+        equilibre(x->fg);
+        equilibre(x->fd);
+    } 
 }
 
 void AVL::rotationDroite(noeud* r) {
@@ -209,7 +220,6 @@ void AVL::rotationDroite(noeud* r) {
         return;
     }
 
-    cout << "---------Rotation droite de " << r->cle << endl;
     noeud* pere = r->pere;
     noeud* G = r->fg;
 
@@ -230,9 +240,6 @@ void AVL::rotationDroite(noeud* r) {
         else
             pere->fd = G;
     }
-
-    // Mettre à jour la hauteur après la rotation
-    majHauteurs(this->root());
 }
 
 void AVL::rotationGauche(noeud* r) {
@@ -241,7 +248,6 @@ void AVL::rotationGauche(noeud* r) {
         return;
     }
 
-    cout << "---------Rotation gauche de " << r->cle << endl;
     noeud* pere = r->pere;
     noeud* D = r->fd;
 
@@ -264,35 +270,63 @@ void AVL::rotationGauche(noeud* r) {
             pere->fg = D;
     }
 
-    // Mettre à jour la hauteur après la rotation
-    majHauteurs(this->root());
+    this->miseajour(this->root());
 }
 
-void AVL::majHauteurs(noeud* x) {
+int AVL::noeuds(noeud *x)
+{
+    if (x == nullptr) return 0 ;
+    else {
+        x->N = 1 + noeuds(x->fg) + noeuds(x->fd) ;
+        return x->N ;
+    }
+}
+
+noeud* AVL::partition(noeud* x, int k) {
+    noeud *res=nullptr;
+    if (x != nullptr){
+        int t = 0;
+        if (x->fg){
+            t = x->fg->N;
+        }
+        if (t == k-1){
+            res = x;
+        } else if (t > k-1){
+            res = partition(x->fg, k);
+            rotationDroite(x);
+        } else {
+            res = partition(x->fd, k-t-1);
+            rotationGauche(x);
+        }
+    }
+    return res;
+}
+
+/******************** Fonctions facultatives : ********************/
+
+void AVL::miseajour(noeud *x)
+{
+    hauteur(x) ;
+    noeuds(x) ;
+    desequilibres(x) ;
+}
+
+void AVL::affichageArbre(noeud *x, const string &prefixe, bool estDernier)
+{
     if (x == nullptr) {
         return;
     }
 
-    // Appel récursif pour les sous-arbres gauche et droit
-    majHauteurs(x->fg);
-    majHauteurs(x->fd);
+    cout << prefixe;
+    cout << "|__";
+    cout << x->cle << endl;
 
-    // Calcul de la hauteur du noeud x
-    int hg = (x->fg == nullptr) ? -1 : x->fg->h;
-    int hd = (x->fd == nullptr) ? -1 : x->fd->h;
-    x->h = max(hg, hd) + 1;
-}
+    string nouveauPrefixe = prefixe + (estDernier ? "    " : "|   ");
+    if (x->fd) {
+        this->affichageArbre(x->fd, nouveauPrefixe, x->fg == nullptr);
+    }
+    if (x->fg) {
+        this->affichageArbre(x->fg, nouveauPrefixe, true);
+    }
 
-
-int AVL::noeuds(noeud *x)
-{
-    return 0;
-}
-
-void AVL::insertionRacine(noeud *x, noeud *y)
-{
-}
-
-noeud* AVL::partition(noeud* x, int k) {
-return nullptr;
 }
