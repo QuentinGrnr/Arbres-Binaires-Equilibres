@@ -101,18 +101,19 @@ AVL::AVL(const char* filename, bool option) // option = 0 : insertion en racine,
 
         //une fois l'inserion terminée, on affiche l'arbre resultant et on l'équilibre
         this->miseajour(this->root());
-        cout << "affichage préfixe avant équilibrage : " << endl;
+        cout << endl << "affichage préfixe avant équilibrage : " << endl;
         this->prefixe(this->root()); 
-        cout << endl;
+        cout << endl << endl;
         this->equilibre(this->root());
         cout << "voulez vous un affichage graphique en plus de l'affichage préfixe de l'arbre ?" << endl << "1 = oui, 0 = non" << endl;
+        this->miseajour(this->root());
         bool affichage;
         cin >> affichage;
         if (affichage) {
-            cout << endl << "affichage graphique de l'arbre: " << endl;
+            cout << endl << "affichage graphique de l'arbre equilibré : " << endl;
             this->affichageArbre(this->root(), "", 0);
         }
-        cout << endl << "affichage préfixe de l'arbre : " << endl;
+        cout << endl << "affichage préfixe de l'arbre équilibré : " << endl;
         this->prefixe(this->root());
         cout << endl;
     }
@@ -203,14 +204,21 @@ void AVL::desequilibres(noeud *x)
 
 void AVL::equilibre(noeud* x) {
     if (x != nullptr && x->N > 1){
-        int n = x->N;
-        int m = n/2;
-        if (n % 2 != 0) {
+        int m = (x->N)/2;
+        if ((x->N) % 2 != 0) {
         m++; // Ajoute 0,5 si le nombre est impair
         }
-        partition(x, m);
-        equilibre(x->fg);
-        equilibre(x->fd);
+        x = partition(x, m);
+        miseajour(x); // Met à jour les attributs N, d et h de chaque noeud de l'arbre enraciné par x pour que la rotation fonctionne
+        if (x->fg) {  // Si le fils gauche existe on peut equilbrer le coté gauche en premier, puis le coté droit
+            equilibre(x->fg);
+            equilibre(x->fd);
+        } 
+        if (x->fd) { // Si le fils droit existe on peut equilbrer le coté droit en premier, puis le coté gauche
+            equilibre(x->fd);
+            equilibre(x->fg);
+        }
+
     } 
 }
 
